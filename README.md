@@ -45,9 +45,14 @@ pip install -r requirements.txt
 ## Quick Start
 Run the end‑to‑end script (train → evaluate → report):
 ```bash
-python sentiment_analysis/src/train.py
+python src/train.py
 ```
 This will train a sentiment classifier, evaluate it on the validation/test set, and write artifacts to `models/`, `reports/`, and `logs/`.
+
+```bash
+python src/predict.py
+```
+This will predict the sentiment for new text using the saved model.
 
 ### Outputs
 - `models/` — saved checkpoints (best model, tokenizer, config).
