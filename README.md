@@ -2,7 +2,7 @@
 
 A simple research project for **Sentiment Analysis**.  
 It includes data preprocessing, baseline ML models, optional neural/transformer models, and evaluation/visualization utilities.
-The code was **originally developed in a Jupyter notebook and later adapted into a structured repository.**
+The code was **originally developed in a Jupyter notebook and later adapted into a structured repository**.
 
 ![Sentiment Scores](images/sentiment_scores.png)
 
