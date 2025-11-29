@@ -1,41 +1,37 @@
-# predict.py
-# Script to predict sentiment for input texts using a trained model and tokenizer.
-# Loads the model and tokenizer, preprocesses input texts, and outputs sentiment predictions.
-
-from __future__ import annotations
 import argparse
 import os
 import numpy as np
-
-from .data_utils import ensure_nltk, load_tokenizer, texts_to_padded
 from tensorflow.keras.models import load_model
+from data_utils import load_tokenizer, texts_to_padded
 
-SENTIMENT_MAP = {0: "Negative", 1: "Neutral", 2: "Positive"}  # Mapping from label to sentiment
+SENTIMENT_MAP = {0: "Negative", 1: "Neutral", 2: "Positive"}
 
 def main():
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="Predict sentiment for input texts")
-    parser.add_argument("--model_dir", type=str, required=True, help="Directory containing model and tokenizer")
-    parser.add_argument("--texts", nargs="+", required=True, help="One or more quoted texts")
-    parser.add_argument("--max_len", type=int, default=100, help="Maximum sequence length for padding")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--text", type=str, nargs="+", help="Texto para analisar")
     args = parser.parse_args()
 
-    ensure_nltk()  # Ensure NLTK resources are available
+    # Se não passar texto, usa os exemplos do notebook
+    texts = args.text if args.text else [
+        "Apple announces record-breaking earnings for Q1 2024",
+        "Stock market rallies on positive economic news",
+        "Tesla's new electric car receives mixed reviews",
+        "Investors concerned about inflation impact on tech stocks"
+    ]
 
-    # Load trained model and tokenizer
-    model = load_model(os.path.join(args.model_dir, "model.h5"))
-    tok = load_tokenizer(os.path.join(args.model_dir, "tokenizer.pkl"))
+    print("A carregar modelo...")
+    model = load_model("models/sentiment_model.h5")
+    tokenizer = load_tokenizer("models/tokenizer.pkl")
 
-    # Preprocess and pad input texts
-    X = texts_to_padded(tok, args.texts, max_len=args.max_len)
-
-    # Predict sentiment
-    preds = model.predict(X)
+    # Preprocessar e Prever
+    X_new = texts_to_padded(tokenizer, texts)
+    preds = model.predict(X_new)
     labels = np.argmax(preds, axis=1)
 
-    # Output predictions
-    for t, y in zip(args.texts, labels):
-        print(f"Text: {t}\nPredicted Sentiment: {SENTIMENT_MAP[int(y)]}\n")
+    print("\n--- Resultados ---")
+    for text, label in zip(texts, labels):
+        print(f"Texto: {text}")
+        print(f"Sentimento: {SENTIMENT_MAP[label]}\n")
 
 if __name__ == "__main__":
     main()

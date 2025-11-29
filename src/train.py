@@ -1,72 +1,90 @@
-# train.py
-# Script to train a sentiment analysis model using configuration from a file or command-line arguments.
-# Loads and preprocesses data, builds the model, and starts training.
-
 import os
 import argparse
+import pickle
+import pandas as pd
+import numpy as np
+import kagglehub
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import to_categorical
 
-from utils import load_cfg, load_and_prepare, build_model  # Utility functions for config, data, and model
-
-def parse_args():
-    """
-    Parse command-line arguments for training configuration.
-    """
-    parser = argparse.ArgumentParser(description="Train sentiment analysis model")
-    parser.add_argument('--config', type=str, required=True, help='Path to config file')
-    parser.add_argument('--input_csv', type=str, help='Input CSV file')
-    parser.add_argument('--model_dir', type=str, help='Directory to save model')
-    parser.add_argument('--max_words', type=int, help='Maximum number of words')
-    parser.add_argument('--max_len', type=int, help='Maximum sequence length')
-    parser.add_argument('--embedding_dim', type=int, help='Embedding dimension')
-    parser.add_argument('--lstm_units', type=int, help='Number of LSTM units')
-    parser.add_argument('--batch_size', type=int, help='Batch size')
-    parser.add_argument('--epochs', type=int, help='Number of epochs')
-    parser.add_argument('--val_size', type=float, help='Validation set size')
-    parser.add_argument('--random_state', type=int, help='Random state')
-    return parser.parse_args()
+from data_utils import preprocess_text, get_sentiment_label
+from model import build_model
 
 def main():
-    # Parse arguments and load configuration
-    args = parse_args()
-    cfg = load_cfg(args.config)
+    # 1. Configuração e Argumentos
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=50)
+    parser.add_argument('--max_words', type=int, default=5000) # Aumentado para 5000 conforme o notebook
+    args = parser.parse_args()
 
-    # Helper to get parameter from CLI or config file
-    def get(name, default=None):
-        return getattr(args, name) if getattr(args, name) is not None else cfg.get(name, default)
+    # 2. Obter Dados (Download automático do Kaggle se necessário)
+    print("A obter dataset...")
+    path = kagglehub.dataset_download("miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests")
+    csv_path = os.path.join(path, "analyst_ratings_processed.csv")
+    
+    # Se o ficheiro principal não existir, tenta o raw
+    if not os.path.exists(csv_path):
+        csv_path = os.path.join(path, "raw_analyst_ratings.csv")
 
-    # Set up paths and hyperparameters
-    input_csv = get("input_csv", "data/raw/raw_analyst_ratings.csv")
-    model_dir = get("model_dir", "models")
-    os.makedirs(model_dir, exist_ok=True)
+    print(f"A ler {csv_path}...")
+    # Lemos apenas 50k linhas para teste rápido (remove 'nrows' para treinar com tudo)
+    df = pd.read_csv(csv_path, nrows=1000) 
+    
+    # 3. Pré-processamento
+    # Identificar coluna de texto
+    text_col = 'title' if 'title' in df.columns else 'headline'
+    df = df.dropna(subset=[text_col])
+    
+    print("A processar textos e gerar sentimentos (VADER)...")
+    df['processed_text'] = df[text_col].apply(preprocess_text)
+    df['sentiment'] = df[text_col].apply(get_sentiment_label)
 
-    max_words = int(get("max_words", 1000))
-    max_len = int(get("max_len", 100))
-    embedding_dim = int(get("embedding_dim", 50))
-    lstm_units = int(get("lstm_units", 128))
-    batch_size = int(get("batch_size", 50))
-    epochs = int(get("epochs", 10))
-    val_size = float(get("val_size", 0.2))
-    random_state = int(get("random_state", 42))
+    X = df['processed_text'].values
+    y = to_categorical(df['sentiment'].values) # Converter para one-hot encoding
 
-    # Load and preprocess data
-    X_tr, X_val, y_tr, y_val, tokenizer = load_and_prepare(
-        input_csv,
-        processed_dir="data/processed",
-        max_words=max_words,
-        max_len=max_len,
-        val_size=val_size,
-        random_state=random_state,
-    )
+    # 4. Tokenização
+    tokenizer = Tokenizer(num_words=args.max_words, lower=True)
+    tokenizer.fit_on_texts(X)
+    X_seq = tokenizer.texts_to_sequences(X)
+    X_pad = pad_sequences(X_seq, maxlen=100, padding='post')
 
-    # Build and train the model
-    model = build_model(max_words=max_words, embedding_dim=embedding_dim, lstm_units=lstm_units)
-    history = model.fit(
-        X_tr, y_tr,
-        validation_data=(X_val, y_val),
-        epochs=epochs,
-        batch_size=batch_size,
-        verbose=1,
-    )
+    # Guardar tokenizer para usar no predict.py
+    os.makedirs("models", exist_ok=True)
+    with open('models/tokenizer.pkl', 'wb') as handle:
+        pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # 5. Split Treino/Teste
+    X_train, X_test, y_train, y_test = train_test_split(X_pad, y, test_size=0.2, random_state=42)
+
+    # 6. Construir e Treinar Modelo
+    model = build_model(max_words=args.max_words)
+    print(model.summary())
+
+    history = model.fit(X_train, y_train, 
+                        batch_size=args.batch_size, 
+                        epochs=args.epochs, 
+                        validation_data=(X_test, y_test))
+
+    # 7. Guardar Modelo e Gráfico
+    model.save("models/sentiment_model.h5")
+    print("Modelo guardado em models/sentiment_model.h5")
+    
+    print(history.history['accuracy'])
+    print(history.history['val_accuracy'])
+
+    # Gerar gráfico de accuracy (como no notebook)
+    plt.plot(history.history['accuracy'], label='accuracy')
+    plt.plot(history.history['val_accuracy'], label='val_accuracy')
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend()
+    plt.savefig('models/training_history.png')
+    print("Gráfico de treino guardado em models/training_history.png")
 
 if __name__ == "__main__":
     main()
