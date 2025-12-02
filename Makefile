@@ -2,6 +2,7 @@ EPOCHS = 5
 BATCH_SIZE = 32
 MAX_WORDS = 5000
 NROWS = 1000
+EVAL_ROWS = 1000
 TEXT = Stock market rallies on positive economic news
 PORT = 5000
 
@@ -21,7 +22,7 @@ predict:
 	$(SET_PYTHONPATH) $(PY) src/predict.py --text "$(TEXT)"
 
 evaluate:
-	$(SET_PYTHONPATH) $(PY) src/evaluate.py --nrows $(NROWS)
+	$(SET_PYTHONPATH) $(PY) src/evaluate.py --nrows $(EVAL_ROWS)
 
 mlflow:
 	$(VENV_BIN)\mlflow ui --port $(PORT)
