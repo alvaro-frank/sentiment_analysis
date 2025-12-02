@@ -6,22 +6,12 @@ It includes data preprocessing with VADER, a custom Keras regression model to pr
 
 ![Sentiment Scores](images/sentiment_scores.png)
 
-## Features
-- Classical ML baselines with scikit-learn (e.g., Logistic Regression, SVM).
-
 ## Data & Features
 - **Data Pipeline**: Downloads and processes financial news data from Kaggle (src/data_utils.py).
 - **Regression Model**: A Bi-LSTM neural network that predicts a continuous sentiment score (src/model.py).
 - **Ground Truth Generation**: Uses VADER to generate target sentiment scores for training (src/data_utils.py).
 - **MLflow Integration**: Tracks parameters, metrics (MAE, MSE, R2), and artifacts (models, plots) automatically (src/train.py, src/evaluate.py).
 - **Evaluation**: Visualizes model performance against VADER scores with correlation plots (src/evaluate.py).
-
-## Evaluation Metrics
-We report standard classification metrics to assess model quality:
-- **Accuracy** for overall correctness.
-- **Precision, Recall, F1** per class and macro/weighted averages.
-- **Confusion Matrix** to visualize class-wise performance.
-- **ROC‑AUC** when applicable (binary).
 
 ## Model Input & Output
 The model processes text data to predict a Sentiment Score:
