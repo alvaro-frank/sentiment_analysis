@@ -1,9 +1,8 @@
 # Sentiment Analysis
 
-A simple research project for **Sentiment Analysis**.  
-It includes data preprocessing, baseline ML models, optional neural/transformer models, and evaluation/visualization utilities.
+A research project for Sentiment Analysis using a Bi-LSTM Regression model.
 
-The code was **originally developed in a Jupyter notebook and later adapted into a structured repository**.
+It includes data preprocessing with VADER, a custom Keras regression model to predict sentiment scores (-1 to 1), and MLflow integration for experiment tracking.
 
 ![Sentiment Scores](images/sentiment_scores.png)
 
@@ -11,10 +10,11 @@ The code was **originally developed in a Jupyter notebook and later adapted into
 - Classical ML baselines with scikit-learn (e.g., Logistic Regression, SVM).
 
 ## Data & Features
-The pipeline expects labeled text for **sentiment classification** (e.g., `positive`, `negative`, `neutral`). Typical inputs:
-- **Raw text:** user reviews, tweets, or comments.
-- **Labels:** one of the supported classes.
-- **Features:** token IDs, attention masks (for transformers), TF‑IDF vectors or embeddings depending on the selected model.
+- **Data Pipeline**: Downloads and processes financial news data from Kaggle (src/data_utils.py).
+- **Regression Model**: A Bi-LSTM neural network that predicts a continuous sentiment score (src/model.py).
+- **Ground Truth Generation**: Uses VADER to generate target sentiment scores for training (src/data_utils.py).
+- **MLflow Integration**: Tracks parameters, metrics (MAE, MSE, R2), and artifacts (models, plots) automatically (src/train.py, src/evaluate.py).
+- **Evaluation**: Visualizes model performance against VADER scores with correlation plots (src/evaluate.py).
 
 ## Evaluation Metrics
 We report standard classification metrics to assess model quality:
@@ -23,17 +23,24 @@ We report standard classification metrics to assess model quality:
 - **Confusion Matrix** to visualize class-wise performance.
 - **ROC‑AUC** when applicable (binary).
 
+## Model Input & Output
+The model processes text data to predict a Sentiment Score:
+- **Input**: Raw text (news headlines/titles).
+- **Preprocessing**: Tokenization, stopword removal, stemming/lemmatization.
+- **Output**: A continuous float value between -1.0 (Negative) and 1.0 (Positive).
 
 ## Project Structure
 ```
 ./
-  sentiment_analysis/
+  sentiment_analysis/      
+    models/                 # Saved artifacts (model.h5, tokenizer.pkl, plots)
     src/
-      data_utils.py
-      model.py
-      predict.py
-      requirements.txt
-      train.py
+      data_utils.py         # Text preprocessing & VADER scoring
+      model.py              # Text preprocessing & VADER scoring
+      predict.py            # Inference script for new text
+      train.py              # Evaluation against VADER ground truth
+    requirements.txt        # Python dependencies
+    Makefile                # Automation commands
     README.md
 ```
 
@@ -42,31 +49,116 @@ We report standard classification metrics to assess model quality:
 pip install -r requirements.txt
 ```
 
+---
+
 ## Quick Start
-Run the end‑to‑end script (train → evaluate → report):
-```bash
-python src/train.py
-```
-This will train a sentiment classifier, evaluate it on the validation/test set, and write artifacts to `models/`, `reports/`, and `logs/`.
+### 🚀 Full Pipeline
+
+To setup, train, predict, and evaluate in one go:
 
 ```bash
-python src/predict.py
+make all
 ```
-This will predict the sentiment for new text using the saved model.
 
-### Outputs
-- `models/` — saved checkpoints (best model, tokenizer, config).
-- `reports/` — evaluation reports and plots.
-- `logs/` — training logs (loss/metrics over time).
+This will:
+- Create the virtual environment and installs the required packages from `requirements.txt`.
+- Download the dataset and train the regression model.
+- Run inference on sample texts.
+- Evaluate the model against the test set and generate plots.
 
-## Configuration
-You can tweak key settings in the code or config files (if present):
-- **Data paths** and preprocessing options.
-- **Model** selection (TF‑IDF + Linear, LSTM/CNN, or Transformer).
-- **Training** hyperparameters (epochs, batch size, learning rate).
-- **Evaluation** options (validation split, metrics).
+You can also customize the run using arguments (see below).
+### 🐍 Virtual Environment
+This section explains how to create and activate the virtual environment and installs the required packages from `requirements.txt`, just use the command line:
 
-## Repro Tips
-- Fix random seeds (NumPy/torch/TensorFlow) for reproducibility.
-- Pin package versions (see `requirements.txt`).
-- Use the same train/validation splits when comparing models.
+```bash
+make setup
+```
+
+### 🧠 Training
+Train the regression model on the financial news dataset:
+
+```bash
+make train
+```
+
+You can override defaults by passing variables on the command line:
+
+| Arg        | Purpose                                   | Default | Examples |
+|------------|-------------------------------------------|---------|----------|
+| `EPOCHS`    | Number of training epochs     | `5`   | `EPOCHS=10` |
+| `BATCH_SIZE` | Batch size for training               | `32`   | `BATCH_SIZE=64` |
+| `MAX_WORDS`    | Vocabulary size              | `5000`    | `MAX_WORDS=10000` |
+| `NROWS`     | Number of rows to read from CSV                              | `1000`    | `NROWS=5000` |
+
+Example:
+```bash
+# Train for 10 epochs with 50000 rows of news.
+make train EPOCHS=10 NROWS=50000
+```
+
+Artifacts are stored locally in models/ and logged to MLflow.
+### 🔮 Prediction
+Predict the sentiment score of specific text(s):
+
+```bash
+make predict
+```
+
+You can pass your own text string (use quotes):
+```bash
+make predict TEXT="Inflation is rising faster than expected"
+```
+### 📊 Evaluation
+Evaluate the trained model against VADER scores (Ground Truth):
+
+```bash
+make evaluate
+```
+
+You can target a specific checkpoint and adjust evaluation settings:
+
+| Arg        | Purpose                                            | Default         | Examples |
+|------------|----------------------------------------------------|-----------------|----------|
+| `EVAL_ROWS`    | Number of rows to use for evaluation               | `100`           | `EVAL_ROWS=500` |
+
+Examples:
+```bash
+# Compare the model scores with VADER scores on 500 news.
+make evaluate EVAL_ROWS=500
+```
+
+This generates an evaluation report (MAE, MSE, R2) and a correlation plot at `models/evaluation_plot.png`.
+
+### 📈 Experiment Tracking (MLflow)
+This project uses **MLflow** to track training performance and version models.
+
+**How to Launch the Dashboard**
+
+To view training curves and logged artifacts, run the following command:
+```bash
+make mlflow PORT=5000
+```
+This will start the MLflow server at **http://127.0.0.1:5000** by default.
+
+What is Logged?
+Every time you run `make train` or `make evaluate`, a new experiment run is created logging:
+
+**Params**:
+- `batch_size`: Batch size used for training.
+- `epochs`: Number of training epochs.
+- `max_words`: Vocabulary size limit.
+- `nrows`: Number of rows used for training.
+- `eval_rows`: Number of rows used for evaluation.
+- `data_source`: Dataset identifier.
+- `opt_name`: Optimizer used.
+- `opt_learning_rate`: Learning rate.
+
+**Metrics**:
+- `mae` (Mean Absolute Error): Average error between model prediction and VADER score.: % of bin volume filled.
+- `val_mae`: Validation MAE.
+- `mse` & `r2_score`: Additional regression metrics (logged during evaluation).
+
+**Artifacts**:
+- Model Checkpoints: The final trained model is saved as an MLflow artifact.
+
+---
