@@ -17,6 +17,7 @@ import mlflow.tensorflow
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.callbacks import EarlyStopping
 
 # Custom modules
 from data_utils import preprocess_text, get_sentiment_score
@@ -28,18 +29,17 @@ def main():
     parser.add_argument('--epochs', type=int, default=5, help="Number of training epochs")
     parser.add_argument('--batch_size', type=int, default=50, help="Batch size")
     parser.add_argument('--max_words', type=int, default=5000, help="Vocabulary size")
-    parser.add_argument('--nrows', type=int, default=1000, help="Number of rows to read from CSV")
+    parser.add_argument('--nrows', type=int, default=None, help="Number of rows to read from CSV", required=False)
     parser.add_argument('--experiment_name', type=str, default="sentiment_analysis_regression", help="MLflow experiment name")
     args = parser.parse_args()
 
     # SETUP MLFLOW
     mlflow.set_experiment(args.experiment_name)
-    mlflow.tensorflow.autolog() # Automatic logging for Keras (metrics, model, params)
+    mlflow.tensorflow.autolog()
 
     with mlflow.start_run() as run:
         print(f">>> MLflow Run ID: {run.info.run_id}")
         
-        # Log custom parameters that autolog might miss
         mlflow.log_params({
             "nrows": args.nrows,
             "max_words": args.max_words,
@@ -54,7 +54,9 @@ def main():
         if not os.path.exists(csv_path):
             csv_path = os.path.join(path, "raw_analyst_ratings.csv")
 
-        print(f">>> Reading file: {csv_path} (Limit: {args.nrows} rows)...")
+        limit_msg = f"{args.nrows}" if args.nrows else "ALL"
+        print(f">>> Reading file: {csv_path} (Limit: {limit_msg} rows)...")
+        
         df = pd.read_csv(csv_path, nrows=args.nrows) 
         
         text_col = 'title' if 'title' in df.columns else 'headline'
@@ -74,7 +76,7 @@ def main():
         X_seq = tokenizer.texts_to_sequences(X)
         X_pad = pad_sequences(X_seq, maxlen=100, padding='post')
 
-        # Save tokenizer (Log as artifact)
+        # Save tokenizer
         os.makedirs("models", exist_ok=True)
         with open('models/tokenizer.pkl', 'wb') as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -87,23 +89,31 @@ def main():
         # 6. Build and Train Model
         model = build_model(max_words=args.max_words)
         print(model.summary())
+        
+        early_stopping = EarlyStopping(
+            monitor='val_loss', 
+            patience=3, 
+            restore_best_weights=True,
+            verbose=1
+        )
 
-        print(">>> Starting REGRESSION training...")
+        print(">>> Starting training...")
         history = model.fit(X_train, y_train, 
                             batch_size=args.batch_size, 
                             epochs=args.epochs, 
-                            validation_data=(X_test, y_test))
+                            validation_data=(X_test, y_test),
+                            callbacks=[early_stopping])
 
         # 7. Save Artifacts locally
-        model.save("models/sentiment_model.h5")
-        print(">>> Model saved to models/sentiment_model.h5")
+        model.save("models/sentiment_model.keras")
+        print(">>> Model saved to models/sentiment_model.keras")
 
         # Plot MAE
         plt.figure(figsize=(10, 6))
         plt.plot(history.history['mae'], label='MAE (Train)')
         plt.plot(history.history['val_mae'], label='MAE (Validation)')
         plt.title('Model Mean Absolute Error (MAE)')
-        plt.ylabel('MAE (Lower is better)')
+        plt.ylabel('MAE')
         plt.xlabel('Epoch')
         plt.legend()
         plt.grid(True)

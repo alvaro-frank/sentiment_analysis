@@ -44,11 +44,11 @@ def main():
 
     # 3. Load Model & Tokenizer
     print(">>> Loading trained model and tokenizer...")
-    if not os.path.exists("models/sentiment_model.h5"):
+    if not os.path.exists("models/sentiment_model.keras"):
         print("Error: Model not found. Run 'make train' first.")
         return
 
-    model = load_model("models/sentiment_model.h5")
+    model = load_model("models/sentiment_model.keras")
     tokenizer = load_tokenizer("models/tokenizer.pkl")
 
     # 4. Model Prediction

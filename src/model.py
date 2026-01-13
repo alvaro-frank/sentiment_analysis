@@ -24,13 +24,10 @@ def build_model(max_words=5000, embedding_dim=50, lstm_units=128):
     model.add(Dropout(0.2))
     model.add(Bidirectional(LSTM(lstm_units)))
     
-    # OUTPUT LAYER: Single neuron for continuous output
-    # ACTIVATION: 'tanh' ensures the output is strictly between -1 and 1
     model.add(Dense(1, activation='tanh'))
     
-    # COMPILATION:
-    # Loss: 'mean_squared_error' (Standard for regression tasks)
-    # Metric: 'mae' (Mean Absolute Error)
+    # Loss: 'mse'
+    # Metric: 'mae'
     model.compile(optimizer='adam', 
                   loss='mean_squared_error', 
                   metrics=['mae'])

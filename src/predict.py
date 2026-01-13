@@ -33,11 +33,11 @@ def main():
     ]
 
     print(">>> Loading model and tokenizer...")
-    if not os.path.exists("models/sentiment_model.h5"):
+    if not os.path.exists("models/sentiment_model.keras"):
         print("Error: Model not found. Please run 'train.py' first.")
         return
 
-    model = load_model("models/sentiment_model.h5")
+    model = load_model("models/sentiment_model.keras")
     tokenizer = load_tokenizer("models/tokenizer.pkl")
 
     # Preprocessing
@@ -58,7 +58,7 @@ def main():
         # Truncate long text for display
         display_text = (text[:42] + '..') if len(text) > 42 else text
         
-        print(f"{display_text:<45} | {score: .4f}          | {label}")
+        print(f"{display_text:<45} | {score: .4f} | {label}")
 
     print("="*65 + "\n")
 
