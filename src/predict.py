@@ -12,9 +12,9 @@ from data_utils import load_tokenizer, texts_to_padded
 
 def get_label_from_score(score):
     """Converts a numeric score back to a readable label."""
-    if score >= 0.5:
+    if score >= 0.3:
         return "Positive"
-    elif score <= -0.5:
+    elif score <= -0.3:
         return "Negative"
     else:
         return "Neutral"
