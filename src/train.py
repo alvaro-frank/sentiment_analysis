@@ -1,76 +1,67 @@
 # ==============================================================================
-# FILE: train.py
-# DESCRIPTION: Main training script. Downloads data, preprocesses text,
-#              generates VADER scores as targets, and trains the regression model.
-#              Logs params, metrics and artifacts to MLflow.
+# FILE: src/train.py
+# DESCRIPTION: Trains the LSTM model using the "Silver Standard" dataset
+#              (Large dataset annotated by FinBERT).
 # ==============================================================================
 
 import os
 import argparse
 import pickle
 import pandas as pd
-import numpy as np
-import kagglehub
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.tensorflow
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.callbacks import EarlyStopping
-
-# Custom modules
-from data_utils import preprocess_text, get_sentiment_score
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from data_utils import preprocess_text
 from model import build_model
 
 def main():
     # 1. Configuration and Arguments
-    parser = argparse.ArgumentParser(description="Train Sentiment Regression Model")
-    parser.add_argument('--epochs', type=int, default=5, help="Number of training epochs")
-    parser.add_argument('--batch_size', type=int, default=50, help="Batch size")
-    parser.add_argument('--max_words', type=int, default=5000, help="Vocabulary size")
-    parser.add_argument('--nrows', type=int, default=None, help="Number of rows to read from CSV", required=False)
-    parser.add_argument('--experiment_name', type=str, default="sentiment_analysis_regression", help="MLflow experiment name")
+    parser = argparse.ArgumentParser(description="Train Sentiment Regression Model (Large Dataset)")
+    parser.add_argument('--epochs', type=int, default=20, help="Number of training epochs")
+    parser.add_argument('--batch_size', type=int, default=64, help="Batch size")
+    parser.add_argument('--max_words', type=int, default=10000, help="Vocabulary size")
     args = parser.parse_args()
 
-    # SETUP MLFLOW
-    mlflow.set_experiment(args.experiment_name)
+    # MLFlow
+    mlflow.set_experiment("sentiment_analysis_experiment")
     mlflow.tensorflow.autolog()
 
     with mlflow.start_run() as run:
         print(f">>> MLflow Run ID: {run.info.run_id}")
         
         mlflow.log_params({
-            "nrows": args.nrows,
             "max_words": args.max_words,
-            "data_source": "miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests"
+            "data_source": "Large Financial Sentiment (Distilled from FinBERT)"
         })
 
-        # 2. Data Acquisition (Kaggle)
-        print(">>> Downloading/Loading dataset from Kaggle...")
-        path = kagglehub.dataset_download("miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests")
-        csv_path = os.path.join(path, "analyst_ratings_processed.csv")
-        
+        # 2. Load Data
+        csv_path = "data/large_financial_sentiment.csv"
+    
         if not os.path.exists(csv_path):
-            csv_path = os.path.join(path, "raw_analyst_ratings.csv")
+            print(f"Error: {csv_path} not found.")
+            print("Please run 'python src/generate_dataset.py' first to generate the data.")
+            return
 
-        limit_msg = f"{args.nrows}" if args.nrows else "ALL"
-        print(f">>> Reading file: {csv_path} (Limit: {limit_msg} rows)...")
+        print(f">>> Loading generated dataset: {csv_path}...")
+        df = pd.read_csv(csv_path)
         
-        df = pd.read_csv(csv_path, nrows=args.nrows) 
+        print(f">>> Dataset loaded. Total rows: {len(df)}")
         
-        text_col = 'title' if 'title' in df.columns else 'headline'
-        df = df.dropna(subset=[text_col])
+        # 3. Preprocessing
+        print(">>> Preprocessing texts...")
+        df['processed_text'] = df['sentence'].apply(preprocess_text)
         
-        # 3. Preprocessing & Target Generation
-        print(">>> Processing texts and calculating target SCORES...")
-        df['processed_text'] = df[text_col].apply(preprocess_text)
-        df['score'] = df[text_col].apply(get_sentiment_score)
+        df = df.dropna(subset=['processed_text', 'score'])
 
         X = df['processed_text'].values
         y = df['score'].values
 
         # 4. Tokenization
+        print(">>> Tokenizing...")
         tokenizer = Tokenizer(num_words=args.max_words, lower=True)
         tokenizer.fit_on_texts(X)
         X_seq = tokenizer.texts_to_sequences(X)
@@ -80,7 +71,6 @@ def main():
         os.makedirs("models", exist_ok=True)
         with open('models/tokenizer.pkl', 'wb') as handle:
             pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        
         mlflow.log_artifact('models/tokenizer.pkl', artifact_path="tokenizer")
 
         # 5. Train/Test Split
@@ -89,39 +79,45 @@ def main():
         # 6. Build and Train Model
         model = build_model(max_words=args.max_words)
         print(model.summary())
-        
+
+        # Early Stopping
         early_stopping = EarlyStopping(
             monitor='val_loss', 
-            patience=3, 
+            patience=5,
             restore_best_weights=True,
             verbose=1
         )
+        
+        # Checkpoint
+        checkpoint = ModelCheckpoint(
+            filepath='models/sentiment_model.keras',
+            monitor='val_loss',
+            save_best_only=True,
+            verbose=1
+        )
 
-        print(">>> Starting training...")
+        print(">>> Starting REGRESSION training...")
         history = model.fit(X_train, y_train, 
                             batch_size=args.batch_size, 
                             epochs=args.epochs, 
                             validation_data=(X_test, y_test),
-                            callbacks=[early_stopping])
+                            callbacks=[early_stopping, checkpoint])
 
-        # 7. Save Artifacts locally
-        model.save("models/sentiment_model.keras")
+        # 7. Save Final Model
         print(">>> Model saved to models/sentiment_model.keras")
 
         # Plot MAE
         plt.figure(figsize=(10, 6))
         plt.plot(history.history['mae'], label='MAE (Train)')
         plt.plot(history.history['val_mae'], label='MAE (Validation)')
-        plt.title('Model Mean Absolute Error (MAE)')
-        plt.ylabel('MAE')
+        plt.title('Model MAE on Large Dataset')
+        plt.ylabel('MAE (Lower is better)')
         plt.xlabel('Epoch')
         plt.legend()
         plt.grid(True)
         plt.savefig('models/training_history.png')
-        
-        # Log plot as artifact
         mlflow.log_artifact('models/training_history.png')
-        print(">>> Training history plot saved and logged to MLflow.")
+        print(">>> Training history plot saved.")
 
 if __name__ == "__main__":
     main()
