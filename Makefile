@@ -1,4 +1,4 @@
-EPOCHS = 5
+EPOCHS = 15
 BATCH_SIZE = 32
 MAX_WORDS = 5000
 EVAL_ROWS = 1000
@@ -18,8 +18,11 @@ setup:
 clean:
 	$(RMVENV)
 
+generate-data:
+	$(PY) src/generate_dataset.py $(if $(NROWS),--nrows $(NROWS),)
+
 train:
-	$(PY) src/train.py --epochs $(EPOCHS) --batch_size $(BATCH_SIZE) --max_words $(MAX_WORDS) $(if $(NROWS),--nrows $(NROWS),)
+	$(PY) src/train.py --epochs $(EPOCHS) --batch_size $(BATCH_SIZE) --max_words $(MAX_WORDS)
 
 predict:
 	$(PY) src/predict.py --text "$(TEXT)"
