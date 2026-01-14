@@ -1,91 +1,94 @@
 # ==============================================================================
-# FILE: evaluate.py
-# DESCRIPTION: Evaluates the trained regression model against the original
-#              VADER sentiment scores. Calculates metrics (MAE, MSE, R2) and
-#              generates a correlation plot.
+# FILE: src/evaluate.py
+# DESCRIPTION: Evaluates the trained regression model.
+#              Default: Evaluates on FiQA (Gold Standard - Human Labels).
+#              Option: Evaluates on Local CSV (Silver Standard - FinBERT Labels).
 # ==============================================================================
 
 import argparse
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import kagglehub
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from tensorflow.keras.models import load_model
+from data_utils import load_tokenizer, texts_to_padded
 
-# Custom modules
-from data_utils import preprocess_text, get_sentiment_score, load_tokenizer, texts_to_padded
+def load_local_data(path):
+    """Loads the local generated CSV."""
+    print(f">>> Loading Local Dataset (Silver Standard) from {path}...")
+    if not os.path.exists(path):
+        return None
+    df = pd.read_csv(path)
+    return df, 'sentence', 'score', 'Local FinBERT Dataset'
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate Model vs VADER")
+    parser = argparse.ArgumentParser(description="Evaluate Sentiment Model")
     parser.add_argument('--nrows', type=int, default=1000, help="Number of rows to evaluate")
     args = parser.parse_args()
 
-    # 1. Load Data
-    print(">>> Loading dataset for evaluation...")
-    try:
-        path = kagglehub.dataset_download("miguelaenlle/massive-stock-news-analysis-db-for-nlpbacktests")
-        csv_path = os.path.join(path, "analyst_ratings_processed.csv")
-    except Exception as e:
-        print(f"Error downloading dataset: {e}")
+    # 1. Load Data Strategy
+    df = None
+    text_col = 'sentence'
+    label_col = 'score'
+    dataset_name = "Unknown"
+        
+    local_path = "data/large_financial_sentiment.csv"
+    df, text_col, label_col, dataset_name = load_local_data(local_path)
+
+    if df is None:
+        print("Error: Could not load any dataset. Please check your internet or run 'src/generate_dataset.py'.")
         return
 
-    print(f">>> Reading {args.nrows} rows from {csv_path}...")
-    df = pd.read_csv(csv_path, nrows=args.nrows)
+    if args.nrows and args.nrows < len(df):
+        print(f">>> Slicing first {args.nrows} rows...")
+        df = df.iloc[:args.nrows]
+
+    print(f">>> Evaluating on {len(df)} samples from: {dataset_name}")
+
+    # 2. Prepare Data
+    df = df.dropna(subset=[text_col, label_col])
     
-    text_col = 'title' if 'title' in df.columns else 'headline'
-    df = df.dropna(subset=[text_col])
-
-    # 2. Prepare "Ground Truth" (VADER Scores)
-    print(">>> Calculating VADER scores (Ground Truth)...")
-    # We calculate the score again to ensure we compare against the exact VADER logic
-    df['vader_score'] = df[text_col].apply(get_sentiment_score)
-
     # 3. Load Model & Tokenizer
     print(">>> Loading trained model and tokenizer...")
-    if not os.path.exists("models/sentiment_model.keras"):
-        print("Error: Model not found. Run 'make train' first.")
+    model_path = "models/sentiment_model.keras"
+    
+    if not os.path.exists(model_path):
+        print(f"Error: Model not found at {model_path}. Run 'python src/train.py' first.")
         return
 
-    model = load_model("models/sentiment_model.keras")
+    model = load_model(model_path)
     tokenizer = load_tokenizer("models/tokenizer.pkl")
 
     # 4. Model Prediction
     print(">>> Running Model Predictions...")
-    # Preprocess texts same way as training
     X_eval = texts_to_padded(tokenizer, df[text_col].tolist())
     
-    # Predict (returns array of shape (N, 1))
     predictions = model.predict(X_eval)
-    df['model_score'] = predictions.flatten()
+    df['model_prediction'] = predictions.flatten()
 
     # 5. Calculate Metrics
-    mae = mean_absolute_error(df['vader_score'], df['model_score'])
-    mse = mean_squared_error(df['vader_score'], df['model_score'])
-    r2 = r2_score(df['vader_score'], df['model_score'])
+    mae = mean_absolute_error(df[label_col], df['model_prediction'])
+    mse = mean_squared_error(df[label_col], df['model_prediction'])
+    r2 = r2_score(df[label_col], df['model_prediction'])
 
-    print("\n" + "="*40)
-    print(" EVALUATION REPORT")
-    print("="*40)
+    print("\n" + "="*50)
+    print(f" EVALUATION REPORT: {dataset_name}")
+    print("="*50)
     print(f"Samples evaluated : {len(df)}")
     print(f"MAE (Mean Abs Err): {mae:.4f}")
     print(f"MSE (Mean Sq Err) : {mse:.4f}")
     print(f"R2 Score          : {r2:.4f}")
-    print("="*40)
+    print("="*50)
 
     # 6. Visualization
     print(">>> Generating evaluation plot...")
     plt.figure(figsize=(10, 6))
     
-    # Scatter plot
-    plt.scatter(df['vader_score'], df['model_score'], alpha=0.3, s=10, label='Data Points')
-    
-    # Perfect fit line (y=x)
+    plt.scatter(df[label_col], df['model_prediction'], alpha=0.3, s=10, label='Data Points')
     plt.plot([-1, 1], [-1, 1], 'r--', linewidth=2, label='Ideal Fit (y=x)')
     
-    plt.title(f'Model Predictions vs VADER Scores\nR2: {r2:.3f} | MAE: {mae:.3f}')
-    plt.xlabel('VADER Score (Target)')
+    plt.title(f'Predictions vs True Labels ({dataset_name})\nR2: {r2:.3f} | MAE: {mae:.3f}')
+    plt.xlabel(f'Target Score ({dataset_name})')
     plt.ylabel('Model Prediction')
     plt.grid(True, alpha=0.3)
     plt.legend()
