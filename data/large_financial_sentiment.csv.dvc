@@ -1,0 +1,5 @@
+outs:
+- md5: 955d3edd20eb08bfc478a9925af7c739
+  size: 1758050
+  hash: md5
+  path: large_financial_sentiment.csv
