@@ -10,3 +10,6 @@ transformers
 torch
 tf-keras
 tqdm
+dvc
+dagshub
+pytest==8.0.0

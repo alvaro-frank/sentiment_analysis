@@ -10,6 +10,12 @@ VENV_BIN := .venv\Scripts
 PY  := $(VENV_BIN)\python.exe
 MKVENV := if not exist .venv ( $(PYTHON) -m venv .venv )
 RMVENV := if exist .venv rmdir /s /q .venv
+RESUME ?= False
+
+RESUME_FLAG =
+ifeq ($(RESUME),True)
+	RESUME_FLAG = --resume
+endif
 
 setup:
 	$(MKVENV)
@@ -22,7 +28,7 @@ generate-data:
 	$(PY) src/generate_dataset.py $(if $(NROWS),--nrows $(NROWS),)
 
 train:
-	$(PY) src/train.py --epochs $(EPOCHS) --batch_size $(BATCH_SIZE) --max_words $(MAX_WORDS)
+	$(PY) src/train.py $(RESUME_FLAG) --epochs $(EPOCHS) --batch_size $(BATCH_SIZE) --max_words $(MAX_WORDS)
 
 predict:
 	$(PY) src/predict.py --text "$(TEXT)"
@@ -33,4 +39,7 @@ evaluate:
 mlflow:
 	$(VENV_BIN)\mlflow ui --port $(PORT)
 
-all: clean setup train predict evaluate mlflow
+unit-test:
+	$(PY) -m pytest tests/
+
+all: clean setup unit-test train predict evaluate mlflow
