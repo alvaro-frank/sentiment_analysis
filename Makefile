@@ -20,6 +20,10 @@ endif
 setup:
 	$(MKVENV)
 	$(PY) -m pip install -r requirements.txt
+	$(PY) -m dvc pull
+
+pull-data:
+	$(PY) -m dvc pull
 
 clean:
 	$(RMVENV)
