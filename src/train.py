@@ -15,6 +15,7 @@ from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.models import load_model
 from data_utils import preprocess_text
 from model import build_model
 
@@ -24,6 +25,7 @@ def main():
     parser.add_argument('--epochs', type=int, default=20, help="Number of training epochs")
     parser.add_argument('--batch_size', type=int, default=64, help="Batch size")
     parser.add_argument('--max_words', type=int, default=10000, help="Vocabulary size")
+    parser.add_argument('--resume', action='store_true', help="Resume training from existing checkpoint")
     args = parser.parse_args()
 
     # MLFlow
@@ -75,9 +77,25 @@ def main():
 
         # 5. Train/Test Split
         X_train, X_test, y_train, y_test = train_test_split(X_pad, y, test_size=0.2, random_state=42)
+        
+        model_path = 'models/sentiment_model.keras'
+        model = None
 
         # 6. Build and Train Model
-        model = build_model(max_words=args.max_words)
+        if args.resume:
+            if os.path.exists(model_path):
+                print(f">>> RESUME: Loading existing model from {model_path}...")
+                try:
+                    model = load_model(model_path)
+                    print(">>> RESUME: Model loaded successfully.")
+                except Exception as e:
+                    print(f">>> RESUME: Failed to load model ({e}). Building from scratch.")
+            else:
+                print(f">>> RESUME: No model found at {model_path}. Building from scratch.")
+        if model is None:
+            print(">>> Building new model architecture...")
+            model = build_model(max_words=args.max_words)
+            
         print(model.summary())
 
         # Early Stopping
