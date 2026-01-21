@@ -5,7 +5,7 @@ EVAL_ROWS = 1000
 TEXT = Stock market rallies on positive economic news
 PORT = 5000
 
-PYTHON := python
+PYTHON := py -3.10
 VENV_BIN := .venv\Scripts
 PY  := $(VENV_BIN)\python.exe
 MKVENV := if not exist .venv ( $(PYTHON) -m venv .venv )
