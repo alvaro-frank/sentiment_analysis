@@ -16,7 +16,7 @@ This project demonstrates how to compress a heavy Transformer model (**FinBERT**
 ## 🚀 Features
 - **Dockerized Environment**: Fully isolated development environment ensuring consistency across machines.
 - **Knowledge Distillation**: Uses FinBERT to generate high-quality labels for a lightweight Bi-LSTM.
-- **Domain-Specific Preprocessing**: Custom cleaning pipeline handling financial entities (numbers, percentages) and preserving crucial negations (e.g., "not", "no").
+- **Domain-Specific Preprocessing**: Custom cleaning pipeline handling financial entities (numbers, percentages) and preserving crucial negations (e.g., 'not', 'no').
 - **Resumable Training**: Logic to seamlessly pause and resume model training from checkpoints.
 - **MLOps Infrastructure**: Version control for large datasets (DVC) and experiment tracking for metrics (MAE, RMSE and Loss) and artifacts.
 
@@ -147,7 +147,7 @@ make mlflow
 
 **The Teacher-Student Approach**
 
-Instead of training a massive BERT model (slow inference), we use a "Knowledge Distillation" strategy:
+Instead of training a massive BERT model (slow inference), we use a 'Knowledge Distillation' strategy:
 
 1. **The teacher (FinBERT)**: A pre-trained Transformer model specialized in finance processes thousands of headlines to generate continuous sentiment scores (-1 to 1).
 2. **The student (Bi-LSTM)**: A lightweight Recurrent Neural Network learns to regress these scores. It is significantly faster and smaller, making it ideal for production.
@@ -157,7 +157,7 @@ Instead of training a massive BERT model (slow inference), we use a "Knowledge D
 Financial text requires careful handling. Our pipeline in `src/data_utils.py`:
 
 - **Number Normalization**: Converts `10%`, `5.5M` -> `<NUM>` to reduce vocabulary sparsity.
-- **Smart Stopwords**: Removes noise but **preserves negations** (e.g., "not", "won't") which flip sentiment polarity.
+- **Smart Stopwords**: Removes noise but **preserves negations** (e.g., 'not', 'won't') which flip sentiment polarity.
 - **Contraction Expansion**: Expands `can't` -> `cannot` for better tokenization.
 
 ## 🐳 Docker Support
@@ -169,30 +169,30 @@ This project is fully containerized to facilitate reproduction and GPU use.
 - **NVIDIA Container Toolkit** (required for the GPU support if configured in `docker-compose.yml`).
 
 **How to Run**
-1. **Build and Run Default Training**: The command below builds the sentiment-analyser:v1 image and starts the default training script (src/train.py):
+1. **Build and Run Default Training**: The command below builds the sentiment-analyser:v1 image and starts the default training script (src/train.py).
 ```bash
 docker-compose up --build
 ```
 
-2. **Pull Data**: To download the versioned data using DVC inside the container:
+2. **Pull Data**: To download the versioned data using DVC inside the container.
 ```bash
 docker-compose run --rm sentiment-app dvc pull
 ```
 
-3. **Generate Dataset** (If not using DVC): To generate the dataset using the FinBERT model inside the container:
+3. **Generate Dataset** (If not using DVC): To generate the dataset using the FinBERT model inside the container.
 ```bash
 docker-compose run --rm sentiment-app python src/generate_dataset.py
 ```
 
-4. **Train Model (Custom Args)**: To train with specific hyperparameters (overriding defaults like epochs or batch size):
+4. **Train Model (Custom Args)**: To train with specific hyperparameters (overriding defaults like epochs or batch size).
 ```bash
 docker-compose run --rm sentiment-app python src/train.py --epochs 20 --batch_size 64
 ```
 
-5. **Predict and Evaluate**: You can run any project script within the isolated container:
+5. **Predict and Evaluate**: You can run any project script within the isolated container.
 ```bash
 # Make Predictions
-docker-compose run --rm sentiment-app python src/predict.py --text "Market revenue is dropping significantly"
+docker-compose run --rm sentiment-app python src/predict.py --text 'Market revenue is dropping significantly'
 ```
 
 ```bash
@@ -205,7 +205,7 @@ docker-compose run --rm sentiment-app python src/evaluate.py --nrows=500
 docker compose run --rm sentiment-app pytest tests/
 ```
 
-7. **Interactive Shell**: To access the terminal inside the container:
+7. **Interactive Shell**: To access the terminal inside the container.
 ```bash
 docker-compose run --rm --entrypoint bash sentiment-app
 ```
