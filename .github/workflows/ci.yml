@@ -24,6 +24,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Setup DVC
+      env:
+        DVC_USER: ${{ secrets.DAGSHUB_USERNAME }}
+        DVC_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+      run: |
+        dvc remote modify origin --project auth basic
+        dvc remote modify origin --project user $DVC_USER
+        dvc remote modify origin --project password $DVC_TOKEN
+        
+        dvc pull
+
     - name: Run Unit Tests
       run: |
         python -m pytest tests/
