@@ -5,6 +5,7 @@
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange?logo=tensorflow&logoColor=white)
 ![DVC](https://img.shields.io/badge/Data-DVC-9cf?logo=dvc&logoColor=white)
+![MLflow](https://img.shields.io/badge/MLflow-3.5.0-0194E2?logo=mlflow&logoColor=white)
 
 A production-grade NLP project that implements Knowledge Distillation to create a lightweight, high-performance sentiment analysis model for financial text.
 
