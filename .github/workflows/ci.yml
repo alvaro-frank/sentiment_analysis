@@ -36,5 +36,7 @@ jobs:
         dvc pull
 
     - name: Run Unit Tests
+      env:
+        PYTHONPATH: src
       run: |
         python -m pytest tests/
