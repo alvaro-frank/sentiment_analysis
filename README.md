@@ -1,19 +1,24 @@
 # Sentiment Analysis
 
+![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange?logo=tensorflow&logoColor=white)
+![DVC](https://img.shields.io/badge/Data-DVC-9cf?logo=dvc&logoColor=white)
+
 A production-grade NLP project that implements Knowledge Distillation to create a lightweight, high-performance sentiment analysis model for financial text.
 
-This project demonstrates how to compress a heavy Transformer model (**FinBERT**) into a fast, deployable **Bi-LSTM** without sacrificing significant accuracy. It features a robust **MLOps** pipeline with data versioning, experiment tracking, and automated testing.
+This project demonstrates how to compress a heavy Transformer model (**FinBERT**) into a fast, deployable **Bi-LSTM** without sacrificing significant accuracy. It features a robust **MLOps** pipeline with data versioning (**DVC**), experiment tracking (**MLflow**), and is fully containerized with **Docker**.
 
 <p align="center">
   <img src="images/sentiment_scores.png" alt="Sentiment Scores" width="400">
 </p>
 
 ## 🚀 Features
+- **Dockerized Environment**: Fully isolated development environment ensuring consistency across machines.
 - **Knowledge Distillation**: Uses FinBERT to generate high-quality labels for a lightweight Bi-LSTM.
 - **Domain-Specific Preprocessing**: Custom cleaning pipeline handling financial entities (numbers, percentages) and preserving crucial negations (e.g., "not", "no").
 - **Resumable Training**: Logic to seamlessly pause and resume model training from checkpoints.
 - **MLOps Infrastructure**: Version control for large datasets (DVC) and experiment tracking for metrics (MAE, RMSE and Loss) and artifacts.
-- **Inference Engine**: Fast prediction CLI suitable for real-time applications.
 
 ## 📂 Project Structure
 ```
@@ -28,6 +33,8 @@ This project demonstrates how to compress a heavy Transformer model (**FinBERT**
 │   ├── predict.py           # Inference CLI
 │   └── evaluate.py          # Evaluation scripts
 ├── tests/                   # Unit tests
+├── docker-compose.yml       # Docker services configuration
+├── Dockerfile               # Docker image definition
 ├── Makefile                 # Command automation
 ├── requirements.txt         # Python dependencies
 └── README.md                # Project documentation
@@ -152,3 +159,48 @@ Financial text requires careful handling. Our pipeline in `src/data_utils.py`:
 - **Number Normalization**: Converts `10%`, `5.5M` -> `<NUM>` to reduce vocabulary sparsity.
 - **Smart Stopwords**: Removes noise but **preserves negations** (e.g., "not", "won't") which flip sentiment polarity.
 - **Contraction Expansion**: Expands `can't` -> `cannot` for better tokenization.
+
+## 🐳 Docker Support
+
+This project is fully containerized to facilitate reproduction and GPU use.
+
+**Prerequisites**
+- **Docker** and **Docker Compose** installed.
+- **NVIDIA Container Toolkit** (required for the GPU support if configured in `docker-compose.yml`).
+
+**How to Run**
+1. **Build and Run Default Training**: The command below builds the sentiment-analyser:v1 image and starts the default training script (src/train.py):
+```bash
+docker-compose up --build
+```
+
+2. **Pull Data**: To download the versioned data using DVC inside the container:
+```bash
+docker-compose run --rm sentiment-app dvc pull
+```
+
+3. **Generate Dataset** (If not using DVC): To generate the dataset using the FinBERT model inside the container:
+```bash
+docker-compose run --rm sentiment-app python src/generate_dataset.py
+```
+
+4. **Train Model (Custom Args)**: To train with specific hyperparameters (overriding defaults like epochs or batch size):
+```bash
+docker-compose run --rm sentiment-app python src/train.py --epochs 20 --batch_size 64
+```
+
+5. **Predict and Evaluate**: You can run any project script within the isolated container:
+```bash
+# Make Predictions
+docker-compose run --rm sentiment-app python src/predict.py --text "Market revenue is dropping significantly"
+```
+
+```bash
+# Evaluate the Model
+docker-compose run --rm sentiment-app python src/evaluate.py --nrows=500
+```
+
+6. **Interactive Shell**: To access the terminal inside the container:
+```bash
+docker-compose run --rm --entrypoint bash sentiment-app
+```
