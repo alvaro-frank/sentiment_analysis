@@ -200,7 +200,12 @@ docker-compose run --rm sentiment-app python src/predict.py --text "Market reven
 docker-compose run --rm sentiment-app python src/evaluate.py --nrows=500
 ```
 
-6. **Interactive Shell**: To access the terminal inside the container:
+6. **Unit Testing**: Ensure feature engineering logic is valid.
+```bash
+docker compose run --rm sentiment-app pytest tests/
+```
+
+7. **Interactive Shell**: To access the terminal inside the container:
 ```bash
 docker-compose run --rm --entrypoint bash sentiment-app
 ```
