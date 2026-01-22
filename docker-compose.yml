@@ -1,0 +1,18 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  sentiment-app:
+    build: .
+    image: sentiment-analyser:v1
+    volumes:
+      - .:/app
+      - /app/.venv
+    # Use GPU NVIDIA from server
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
