@@ -1,13 +1,16 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
   sentiment-app:
     build: .
     image: sentiment-analyser:v1
+    ports:
+      - "8000:80"
     volumes:
       - .:/app
       - /app/.venv
+    environment:
+      - ENV=production
     # Use GPU NVIDIA from server
     # deploy:
     #   resources:
