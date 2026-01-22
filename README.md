@@ -171,7 +171,7 @@ This project is fully containerized to facilitate reproduction and GPU use.
 - **NVIDIA Container Toolkit** (required for the GPU support if configured in `docker-compose.yml`).
 
 **How to Run**
-1. **Build and Run Default Training**: The command below builds the sentiment-analyser:v1 image and starts the default training script (src/train.py).
+1. **Build and Run Default Training**: The command below builds the sentiment-analyser:v1 image and exposes a REST API to predict.
 ```bash
 docker-compose up --build
 ```
@@ -210,4 +210,32 @@ docker compose run --rm sentiment-app pytest tests/
 7. **Interactive Shell**: To access the terminal inside the container.
 ```bash
 docker-compose run --rm --entrypoint bash sentiment-app
+```
+
+## 🔌 API Usage
+
+The project exposes a REST API via FastAPI.
+
+**Start the API**:
+```bash
+docker-compose up --build
+```
+
+**Make a Prediction**:
+```bash
+curl -X 'POST' \
+  'http://localhost:8000/predict' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "text": "The company reported a 20% increase in revenue."
+}'
+```
+
+**Response**:
+```bash
+{
+  "text": "The company reported a 20% increase in revenue.",
+  "sentiment_score": 0.85,
+  "label": "Positive"
+}
 ```
