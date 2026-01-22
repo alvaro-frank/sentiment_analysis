@@ -44,6 +44,6 @@ mlflow:
 	$(VENV_BIN)\mlflow ui --port $(PORT)
 
 unit-test:
-	$(PY) -m pytest tests/
+	set PYTHONPATH=src && $(PY) -m pytest tests/
 
 all: clean setup unit-test train predict evaluate mlflow
