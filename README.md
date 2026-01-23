@@ -241,3 +241,20 @@ curl -X 'POST' \
   "label": "Positive"
 }
 ```
+
+## ⚙️ CI/CD Pipeline
+
+This project implements a Continuous Integration pipeline via GitHub Actions to ensure code and model integrity on every push or pull request to the `main` or `master` branches.
+
+**Pipeline Workflow**:
+1. **Isolated Environment**: Sets up a Python 3.10 environment and installs all dependencies listed in `requirements.txt`.
+2. **Data & Model Synchronizaton**: Authenticates with DagsHub using GitHub Secrets and executes `dvc pull` to download the models and datasets required for testing.
+4. **Automated Testing**: Executes the full test suite via `pytest`, covering:
+     - **Unit Tests**: Validating feature engineering logic and data filtering.
+     - **Integration Tests**: Verifying the reliability of the FastAPI endpoints.
+
+**Required GitHub Secrets**
+
+To enable the pipeline in your own fork, you must add the following secrets in your repository settings:
+- **`DAGSHUB_USERNAME`**: Your DagsHub username.
+- **`DAGSHUB_TOKEN`**: Your DagsHub access token.
