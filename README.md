@@ -26,6 +26,7 @@ This project demonstrates how to compress a heavy Transformer model (**FinBERT**
 
 ## 📂 Project Structure
 ```
+├── .github/                 # CI/CD configuration
 ├── .dvc/                    # DVC Configuration
 ├── data/                    # Data managed by DVC
 ├── models/                  # Saved models and tokenizer
