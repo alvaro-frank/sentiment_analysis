@@ -112,14 +112,14 @@ Evaluate the model against the generated dataset. This calculates R² score, MAE
 
 | Arg        | Purpose                                            | Default         | Examples |
 |------------|----------------------------------------------------|-----------------|----------|
-| `EVAL_ROWS`    | Number of rows to use for evaluation               | `100`           | `EVAL_ROWS=500` |
+| `NROWS`    | Number of rows to use for evaluation               | `100`           | `NROWS=500` |
 
 ```bash
 # Evaluate the model with default number of rows
 make evaluate
 
 #Evaluate the model with a specific number of rows
-make evaluate EVAL_ROWS=500
+make evaluate NROWS=500
 ```
 _Outputs metrics to console and saves evaluation_plot.png to models/.._
 

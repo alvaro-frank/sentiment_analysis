@@ -8,7 +8,7 @@ import argparse
 import os
 import numpy as np
 from tensorflow.keras.models import load_model
-from data_utils import load_tokenizer, texts_to_padded
+from src.data_utils import load_tokenizer, texts_to_padded
 
 def get_label_from_score(score):
     """Converts a numeric score back to a readable label."""
