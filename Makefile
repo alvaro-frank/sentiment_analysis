@@ -35,7 +35,7 @@ train:
 	$(PY) src/train.py $(RESUME_FLAG) --epochs $(EPOCHS) --batch_size $(BATCH_SIZE) --max_words $(MAX_WORDS)
 
 predict:
-	$(PY) src/predict.py --text "$(TEXT)"
+	set PYTHONPATH=. && $(PY) -m src.predict --text "$(TEXT)"
 
 evaluate:
 	$(PY) src/evaluate.py --nrows $(EVAL_ROWS)
