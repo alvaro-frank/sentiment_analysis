@@ -248,8 +248,9 @@ curl -X 'POST' \
 This project implements a Continuous Integration pipeline via GitHub Actions to ensure code and model integrity on every push or pull request to the `main` or `master` branches.
 
 **Pipeline Workflow**:
-1. **Isolated Environment**: Sets up a Python 3.10 environment and installs all dependencies listed in `requirements.txt`.
-2. **Data & Model Synchronizaton**: Authenticates with DagsHub using GitHub Secrets and executes `dvc pull` to download the models and datasets required for testing.
+1. **Isolated Environment**: Sets up a Python 3.10 environment and installs all dependencies listed in `requirements.txt`. Also implements GitHub Actions caching for `pip` to reduce build times by avoiding redundant downloads of heavy libraries like TensorFlow.
+2. **Code Quality (Linting)**: Uses `flake8` to enforce PEP 8 standards and catch potential bugs early in the pipeline.
+3. **Data & Model Synchronizaton**: Authenticates with DagsHub using GitHub Secrets and executes `dvc pull` to download the models and datasets required for testing.
 4. **Automated Testing**: Executes the full test suite via `pytest`, covering:
      - **Unit Tests**: Validating feature engineering logic and data filtering.
      - **Integration Tests**: Verifying the reliability of the FastAPI endpoints.
