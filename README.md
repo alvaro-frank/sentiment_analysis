@@ -227,7 +227,7 @@ docker-compose up --build
 **Make a Prediction**:
 ```bash
 curl -X 'POST' \
-  'http://localhost:8000/predict' \
+  'http://localhost:8001/predict' \
   -H 'Content-Type: application/json' \
   -d '{
   "text": "The company reported a 20% increase in revenue."
