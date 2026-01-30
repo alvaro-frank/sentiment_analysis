@@ -134,7 +134,7 @@ Run inference on a custom sentence to test the model.
 make predict TEXT='Revenue dropped by 10% due to poor market conditions'
 ```
 
-4. **Unit Testing**
+4. **Unit & Integration Testing**
 
 Ensure preprocessing logic (negation handling, tokenization) and model architecture are valid.
 ```bash
