@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.tensorflow
+import mlflow.pyfunc
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -18,6 +19,32 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.models import load_model
 from data_utils import preprocess_text
 from model import build_model
+
+class SentimentPyFuncModel(mlflow.pyfunc.PythonModel):
+    def load_context(self, context):
+        import pickle
+        from tensorflow.keras.models import load_model
+        
+        self.model = load_model(context.artifacts["keras_model"])
+        
+        with open(context.artifacts["tokenizer"], "rb") as f:
+            self.tokenizer = pickle.load(f)
+            
+    def predict(self, context, model_input):
+        import pandas as pd
+        from data_utils import texts_to_padded 
+        
+        if isinstance(model_input, pd.DataFrame):
+            texts = model_input.iloc[:, 0].tolist()
+        elif isinstance(model_input, dict):
+            texts = model_input.get("text", [])
+        else:
+            texts = model_input
+            
+        X_pad = texts_to_padded(self.tokenizer, texts)
+        predictions = self.model.predict(X_pad)
+        
+        return [float(pred[0]) for pred in predictions]
 
 def main():
     # 1. Configuration and Arguments
@@ -136,6 +163,19 @@ def main():
         plt.savefig('models/training_history.png')
         mlflow.log_artifact('models/training_history.png')
         print(">>> Training history plot saved.")
+        
+        artifacts = {
+            "keras_model": "models/sentiment_model.keras",
+            "tokenizer": "models/tokenizer.pkl"
+        }
+
+        mlflow.pyfunc.log_model(
+            artifact_path="sentiment_model_package",
+            python_model=SentimentPyFuncModel(),
+            artifacts=artifacts,
+            code_paths=["src/data_utils.py"],
+            registered_model_name="FinancialSentimentModel" 
+        )
 
 if __name__ == "__main__":
     main()
