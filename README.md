@@ -2,7 +2,6 @@
 
 ![CI Status](https://github.com/alvaro-frank/sentiment_analysis/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.10-blue?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker&logoColor=white)
 ![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange?logo=tensorflow&logoColor=white)
 ![Bi-LSTM](https://img.shields.io/badge/Model-Bi--LSTM-orange?logo=tensorflow&logoColor=white)
@@ -174,7 +173,7 @@ This project is fully containerized to facilitate reproduction and GPU use.
 - **NVIDIA Container Toolkit** (required for the GPU support if configured in `docker-compose.yml`).
 
 **How to Run**
-1. **Build and expose Predict API**: The command below builds the sentiment-analyser:v1 image and exposes a REST API to predict.
+1. **Build**: The command below builds the sentiment-analyser:v1 image.
 ```bash
 docker-compose up --build
 ```
