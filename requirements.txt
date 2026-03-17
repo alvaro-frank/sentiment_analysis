@@ -13,6 +13,3 @@ tqdm
 dvc
 dagshub
 pytest==8.0.0
-fastapi
-uvicorn
-httpx
