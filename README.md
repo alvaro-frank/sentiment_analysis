@@ -214,34 +214,6 @@ docker compose run --rm sentiment-app pytest tests/
 docker-compose run --rm --entrypoint bash sentiment-app
 ```
 
-## 🔌 API Usage
-
-The project exposes a REST API via FastAPI.
-
-**Start the API**:
-```bash
-docker-compose up --build
-```
-
-**Make a Prediction**:
-```bash
-curl -X 'POST' \
-  'http://localhost:8001/predict' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "text": "The company reported a 20% increase in revenue."
-}'
-```
-
-**Response**:
-```bash
-{
-  "text": "The company reported a 20% increase in revenue.",
-  "sentiment_score": 0.85,
-  "label": "Positive"
-}
-```
-
 ## ⚙️ CI/CD Pipeline
 
 This project implements a Continuous Integration pipeline via GitHub Actions to ensure code and model integrity on every push or pull request to the `main` or `master` branches.
