@@ -17,5 +17,3 @@ COPY . .
 ENV PYTHONPATH="${PYTHONPATH}:/app/src"
 
 EXPOSE 80
-
-CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "80"]

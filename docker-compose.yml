@@ -17,8 +17,6 @@ services:
     stdin_open: true
     tty: true
     restart: always
-    command: >
-      sh -c "uvicorn src.api:app --host 0.0.0.0 --port 80"
     # Use GPU NVIDIA from server
     # deploy:
     #   resources:
